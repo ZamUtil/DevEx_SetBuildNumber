@@ -19,15 +19,18 @@ import static util.Utils.parseMessage;
 
 public class UpdateFixedInBuildMessageHandler {
 
-    public static final String JOB_NAME = "MQM-Root-POSTGRESQL-full-master";
-    public static final String FIXED_IN_BUILD_FIELD = "fixed_in_build_udf";
+    public final String jobName;
+    public final String fixedInBuildField;
 
     private final String message;
     private final HttpClient httpClient;
 
-    public UpdateFixedInBuildMessageHandler(String message, HttpClient httpClient) {
+    public UpdateFixedInBuildMessageHandler(String message, HttpClient httpClient, String jobName, String fixedInBuildField) {
         this.message = message;
         this.httpClient = httpClient;
+
+        this.jobName = jobName;
+        this.fixedInBuildField = fixedInBuildField;
     }
 
     public void handle() {
@@ -119,7 +122,7 @@ public class UpdateFixedInBuildMessageHandler {
                 String jobName = dataItem.getJSONObject("ci_job").getString("name");
 
                 //filter out not relevant job
-                if (JOB_NAME.equals(jobName)) {
+                if (this.jobName.equals(jobName)) {
                     try {
                         version = Integer.valueOf(dataItem.getString("name"));
                     } catch (Exception ignored) {
@@ -141,7 +144,7 @@ public class UpdateFixedInBuildMessageHandler {
             versions.forEach((entityId, version) -> {
                 System.out.println("Updating work_item: " + entityId + ", new version: " + version);
                 String url = baseUrl + "/work_items/" + entityId;
-                String body = "{\"" + FIXED_IN_BUILD_FIELD + "\": \"" + version + "\",\"id\":\"" + entityId + "\"}";
+                String body = "{\"" + this.fixedInBuildField + "\": \"" + version + "\",\"id\":\"" + entityId + "\"}";
                 HttpRequest request = Utils.buildHttpRequest(HttpMethod.PUT, url, body);
                 httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
             });
